@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bounce Image</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #111;
+        font-family: Arial, sans-serif;
+      }
+
+      #upload-container {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 10;
+        background-color: rgba(0, 0, 0, 0.7);
+        padding: 20px;
+        border-radius: 8px;
+        color: white;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        cursor: move;
+      }
+
+      input[type="file"] {
+        margin-right: 10px;
+        padding: 5px;
+        background-color: #444;
+        color: white;
+        border: 1px solid #666;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      button {
+        padding: 5px 10px;
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      button:hover {
+        background-color: #c0392b;
+      }
+
+      button:focus {
+        outline: none;
+      }
+
+      #image {
+        position: absolute;
+        width: 100px;
+        height: 100px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="upload-container">
+      <input type="file" id="imageUpload" accept="image/*" />
+      <button id="closeUpload">Close</button>
+    </div>
+
+    <img id="image" src="" alt="Image will bounce here" hidden />
+
+    <script>
+      const imageElement = document.getElementById("image");
+      const uploadInput = document.getElementById("imageUpload");
+      const uploadContainer = document.getElementById("upload-container");
+      const closeButton = document.getElementById("closeUpload");
+
+      let imageWidth = 100;
+      let imageHeight = 100;
+      let x = 0;
+      let y = 0;
+      let speedX = 2;
+      let speedY = 2;
+
+      let isDragging = false;
+      let offsetX, offsetY;
+
+      uploadInput.addEventListener("change", handleImageUpload);
+      closeButton.addEventListener("click", closeUploadPanel);
+
+      uploadContainer.addEventListener("mousedown", startDragging);
+      document.addEventListener("mousemove", dragElement);
+      document.addEventListener("mouseup", stopDragging);
+
+      function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            imageElement.src = e.target.result;
+            imageElement.hidden = false;
+            imageElement.onload = function () {
+              imageWidth = imageElement.width;
+              imageHeight = imageElement.height;
+              startBouncing();
+            };
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      function closeUploadPanel() {
+        uploadContainer.style.display = "none";
+      }
+
+      function startDragging(e) {
+        isDragging = true;
+        offsetX = e.clientX - uploadContainer.offsetLeft;
+        offsetY = e.clientY - uploadContainer.offsetTop;
+      }
+
+      function dragElement(e) {
+        if (isDragging) {
+          uploadContainer.style.left = e.clientX - offsetX + "px";
+          uploadContainer.style.top = e.clientY - offsetY + "px";
+        }
+      }
+
+      function stopDragging() {
+        isDragging = false;
+      }
+
+      function startBouncing() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        function animate() {
+          // Move image by speed
+          x += speedX;
+          y += speedY;
+
+          // Check if the image has hit the wall
+          if (x + imageWidth > screenWidth || x < 0) {
+            speedX = -speedX;
+          }
+          if (y + imageHeight > screenHeight || y < 0) {
+            speedY = -speedY;
+          }
+
+          // Update image position
+          imageElement.style.left = x + "px";
+          imageElement.style.top = y + "px";
+
+          requestAnimationFrame(animate); // Loop the animation
+        }
+
+        animate(); // Start the animation loop
+      }
+    </script>
+  </body>
+</html>
