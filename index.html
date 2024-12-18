@@ -81,6 +81,10 @@
       const uploadContainer = document.getElementById("upload-container");
       const closeButton = document.getElementById("closeUpload");
 
+      let isBouncingAutonomously = true;
+      let autoSpeedX = Math.random() * 2 + 2;
+      let autoSpeedY = Math.random() * 2 + 2;
+
       let imageWidth = 100;
       let imageHeight = 100;
       let x = 0;
@@ -100,13 +104,16 @@
       document.addEventListener("mouseup", stopDraggingImage);
 
       function handleImageUpload(event) {
+        console.log("Image upload started");
         const file = event.target.files[0];
         if (file) {
           const reader = new FileReader();
           reader.onload = function (e) {
+            console.log("Image loaded");
             imageElement.src = e.target.result;
             imageElement.hidden = false;
             imageElement.onload = function () {
+              console.log("Image displayed");
               imageWidth = imageElement.width;
               imageHeight = imageElement.height;
               x = (window.innerWidth - imageWidth) / 2;
@@ -121,10 +128,12 @@
       }
 
       function closeUploadPanel() {
+        console.log("Upload panel closed");
         uploadContainer.style.display = "none";
       }
 
       function startDraggingImage(e) {
+        console.log("Dragging image started");
         e.preventDefault();
         isDraggingImage = true;
         dragStartX = e.clientX - x;
@@ -138,14 +147,15 @@
       function dragImage(e) {
         e.preventDefault();
         if (isDraggingImage) {
+          console.log(`Dragging image at (${e.clientX}, ${e.clientY})`);
           x = e.clientX - dragStartX;
           y = e.clientY - dragStartY;
 
           imageElement.style.left = `${x}px`;
           imageElement.style.top = `${y}px`;
 
-          speedX = e.clientX - lastX;
-          speedY = e.clientY - lastY;
+          speedX = (e.clientX - lastX) * 3;
+          speedY = (e.clientY - lastY) * 3;
 
           lastX = e.clientX;
           lastY = e.clientY;
@@ -154,34 +164,66 @@
 
       function stopDraggingImage() {
         if (isDraggingImage) {
+          console.log("Dragging image stopped");
           isDraggingImage = false;
         }
       }
 
       function startBouncing() {
+        console.log("Bouncing started");
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
 
         function animate() {
           if (!isDraggingImage) {
-            x += speedX;
-            y += speedY;
+            if (
+              Math.abs(speedX) < 0.5 &&
+              Math.abs(speedY) < 0.5 &&
+              isBouncingAutonomously
+            ) {
+              x += autoSpeedX;
+              y += autoSpeedY;
 
-            if (x + imageWidth > screenWidth || x < 0) {
-              speedX = -speedX * 0.8; // Reduce speed on bounce
-              x = Math.max(0, Math.min(x, screenWidth - imageWidth));
+              if (x + imageWidth > screenWidth || x < 0) {
+                console.log("Bouncing off vertical wall");
+                autoSpeedX = -autoSpeedX;
+                x = Math.max(0, Math.min(x, screenWidth - imageWidth));
+              }
+
+              if (y + imageHeight > screenHeight || y < 0) {
+                console.log("Bouncing off horizontal wall");
+                autoSpeedY = -autoSpeedY;
+                y = Math.max(0, Math.min(y, screenHeight - imageHeight));
+              }
+            } else {
+              x += speedX;
+              y += speedY;
+
+              if (x + imageWidth > screenWidth || x < 0) {
+                console.log("Bouncing off vertical wall with speed");
+                speedX = -speedX * 0.8;
+                x = Math.max(0, Math.min(x, screenWidth - imageWidth));
+              }
+
+              if (y + imageHeight > screenHeight || y < 0) {
+                console.log("Bouncing off horizontal wall with speed");
+                speedY = -speedY * 0.8;
+                y = Math.max(0, Math.min(y, screenHeight - imageHeight));
+              }
+
+              speedX *= 0.99;
+              speedY *= 0.99;
+
+              if (Math.abs(speedX) < 0.01) speedX = 0;
+              if (Math.abs(speedY) < 0.01) speedY = 0;
+
+              isBouncingAutonomously =
+                Math.abs(speedX) < 0.5 && Math.abs(speedY) < 0.5;
+
+              console.log(
+                `Speed: (${speedX.toFixed(2)}, ${speedY.toFixed(2)})`
+              );
             }
-
-            if (y + imageHeight > screenHeight || y < 0) {
-              speedY = -speedY * 0.8; // Reduce speed on bounce
-              y = Math.max(0, Math.min(y, screenHeight - imageHeight));
-            }
-
-            speedX *= 0.98; // Apply friction
-            speedY *= 0.98;
-
-            if (Math.abs(speedX) < 0.01) speedX = 0;
-            if (Math.abs(speedY) < 0.01) speedY = 0;
           }
 
           imageElement.style.left = `${x}px`;
