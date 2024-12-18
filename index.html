@@ -59,6 +59,11 @@
         position: absolute;
         width: 100px;
         height: 100px;
+        cursor: grab;
+      }
+
+      #image:active {
+        cursor: grabbing;
       }
     </style>
   </head>
@@ -80,18 +85,19 @@
       let imageHeight = 100;
       let x = 0;
       let y = 0;
-      let speedX = 2;
-      let speedY = 2;
+      let speedX = 0;
+      let speedY = 0;
 
-      let isDragging = false;
-      let offsetX, offsetY;
+      let isDraggingImage = false;
+      let dragStartX, dragStartY;
+      let lastX, lastY;
 
       uploadInput.addEventListener("change", handleImageUpload);
       closeButton.addEventListener("click", closeUploadPanel);
 
-      uploadContainer.addEventListener("mousedown", startDragging);
-      document.addEventListener("mousemove", dragElement);
-      document.addEventListener("mouseup", stopDragging);
+      imageElement.addEventListener("mousedown", startDraggingImage);
+      document.addEventListener("mousemove", dragImage);
+      document.addEventListener("mouseup", stopDraggingImage);
 
       function handleImageUpload(event) {
         const file = event.target.files[0];
@@ -103,6 +109,10 @@
             imageElement.onload = function () {
               imageWidth = imageElement.width;
               imageHeight = imageElement.height;
+              x = (window.innerWidth - imageWidth) / 2;
+              y = (window.innerHeight - imageHeight) / 2;
+              imageElement.style.left = `${x}px`;
+              imageElement.style.top = `${y}px`;
               startBouncing();
             };
           };
@@ -114,21 +124,38 @@
         uploadContainer.style.display = "none";
       }
 
-      function startDragging(e) {
-        isDragging = true;
-        offsetX = e.clientX - uploadContainer.offsetLeft;
-        offsetY = e.clientY - uploadContainer.offsetTop;
+      function startDraggingImage(e) {
+        e.preventDefault();
+        isDraggingImage = true;
+        dragStartX = e.clientX - x;
+        dragStartY = e.clientY - y;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        speedX = 0;
+        speedY = 0;
       }
 
-      function dragElement(e) {
-        if (isDragging) {
-          uploadContainer.style.left = e.clientX - offsetX + "px";
-          uploadContainer.style.top = e.clientY - offsetY + "px";
+      function dragImage(e) {
+        e.preventDefault();
+        if (isDraggingImage) {
+          x = e.clientX - dragStartX;
+          y = e.clientY - dragStartY;
+
+          imageElement.style.left = `${x}px`;
+          imageElement.style.top = `${y}px`;
+
+          speedX = e.clientX - lastX;
+          speedY = e.clientY - lastY;
+
+          lastX = e.clientX;
+          lastY = e.clientY;
         }
       }
 
-      function stopDragging() {
-        isDragging = false;
+      function stopDraggingImage() {
+        if (isDraggingImage) {
+          isDraggingImage = false;
+        }
       }
 
       function startBouncing() {
@@ -136,26 +163,34 @@
         const screenHeight = window.innerHeight;
 
         function animate() {
-          // Move image by speed
-          x += speedX;
-          y += speedY;
+          if (!isDraggingImage) {
+            x += speedX;
+            y += speedY;
 
-          // Check if the image has hit the wall
-          if (x + imageWidth > screenWidth || x < 0) {
-            speedX = -speedX;
+            if (x + imageWidth > screenWidth || x < 0) {
+              speedX = -speedX * 0.8; // Reduce speed on bounce
+              x = Math.max(0, Math.min(x, screenWidth - imageWidth));
+            }
+
+            if (y + imageHeight > screenHeight || y < 0) {
+              speedY = -speedY * 0.8; // Reduce speed on bounce
+              y = Math.max(0, Math.min(y, screenHeight - imageHeight));
+            }
+
+            speedX *= 0.98; // Apply friction
+            speedY *= 0.98;
+
+            if (Math.abs(speedX) < 0.01) speedX = 0;
+            if (Math.abs(speedY) < 0.01) speedY = 0;
           }
-          if (y + imageHeight > screenHeight || y < 0) {
-            speedY = -speedY;
-          }
 
-          // Update image position
-          imageElement.style.left = x + "px";
-          imageElement.style.top = y + "px";
+          imageElement.style.left = `${x}px`;
+          imageElement.style.top = `${y}px`;
 
-          requestAnimationFrame(animate); // Loop the animation
+          requestAnimationFrame(animate);
         }
 
-        animate(); // Start the animation loop
+        animate();
       }
     </script>
   </body>
